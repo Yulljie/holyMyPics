@@ -32,7 +32,7 @@ def on_add_tag_clicked(tag_input: QLineEdit, tag_list_widget: QListWidget):
     tagStr = tag_input.text()
     # a,b,c,d,e,f,g
     if "," in tagStr:
-        tags = tagStr.split(",")
+        tags = tagStr.replace(" ", "").split(",")
         for tag in tags:
             # 比对每一个tag, 如果不重复则录入
             if not tag_list_widget.findItems(tag, Qt.MatchFlag.MatchExactly):
@@ -40,7 +40,7 @@ def on_add_tag_clicked(tag_input: QLineEdit, tag_list_widget: QListWidget):
     else:
         # 同上
         if not tag_list_widget.findItems(tagStr, Qt.MatchFlag.MatchExactly):
-            tag_list_widget.addItem(tagStr)
+            tag_list_widget.addItem(tagStr.replace(" ", ""))
     tag_input.clear()
 
 
