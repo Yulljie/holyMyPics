@@ -526,19 +526,44 @@ def on_image_clicked(
     copyImgBtn.clicked.connect(lambda: copyToClipboard(filePath))
     deleteBtn = QPushButton("删除图像")
 
-    def on_deleteBtn_clicked(container: ImageViewer):
+    def on_deleteBtn_clicked():
+        """
+        删除文件并刷新预览
+        """
         try:
             conn = sqlite3.connect(DB_PATH)
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM files WHERE hash = ?", (file_hash,))
             oldProperties = cursor.fetchone()
-            # oldProperties: (hash,  storageName, nickname, tagsJson)
+            if not oldProperties:
+                print("文件不存在，可能已被删除")
+                return
+            # 删除数据库记录
             cursor.execute("DELETE FROM files WHERE hash = ?", (file_hash,))
-            filePath = os.path.join(TARGET_DIR, oldProperties[1])
-            os.remove(filePath)
+            # 删除物理文件
+            filePathToDelete = os.path.join(TARGET_DIR, oldProperties[1])
+            os.remove(filePathToDelete)
             conn.commit()
-            # 刷新container
-
+            # 刷新预览区：重新执行当前搜索条件
+            # 从主窗口获取需要的部件
+            tag_list = mainwindow.tag_list_widget
+            nickname_input = mainwindow.nickname_input
+            result_label = mainwindow.result_label
+            container = mainwindow.container
+            # 重新搜索并更新 container
+            hashs = on_search_clicked(tag_list, nickname_input, result_label)
+            container.clear_images()
+            conn2 = sqlite3.connect(DB_PATH)
+            cursor2 = conn2.cursor()
+            for hashKey in hashs:
+                cursor2.execute("SELECT * FROM files WHERE hash = ?", (hashKey,))
+                searchResult = cursor2.fetchone()
+                if searchResult:
+                    container.add_image(
+                        searchResult[0], searchResult[1], searchResult[2]
+                    )
+            conn2.close()
+            # 关闭详情窗口
             imgInfoWindow.close()
         except Exception as e:
             print(f"删除文件时异常:\n{e}")

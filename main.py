@@ -140,7 +140,11 @@ splitter.addWidget(filterFrame)
 # 设置分割器布局
 splitter.setSizes([480, 320])  # 上半500px，下半150px
 mainwindow.setCentralWidget(splitter)
-
+# 设置mw属性
+mainwindow.tag_list_widget = tag_list_widget
+mainwindow.nickname_input = nickname_input
+mainwindow.result_label = result_label
+mainwindow.container = container
 # 初始化container里的图片
 hashs = slots.on_search_clicked(tag_list_widget, nickname_input, result_label)
 for hashKey in hashs:
