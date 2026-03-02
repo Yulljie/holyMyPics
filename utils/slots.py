@@ -17,9 +17,10 @@ from PySide6.QtWidgets import (
     QAbstractItemView,
     QFileDialog,
     QMessageBox,
+    QApplication,
 )
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QFont, QPixmap
+from PySide6.QtCore import Qt, QUrl, QMimeData
+from PySide6.QtGui import QFont, QPixmap, QDesktopServices
 from PIL import Image, ImageQt
 from utils.widgets import ImageViewer
 
@@ -54,6 +55,75 @@ def _QListWidgetToList(qlistwidget: QListWidget) -> List[str]:
     for i in range(qlistwidget.count()):
         ret.append(qlistwidget.item(i).text())
     return ret
+
+
+def copyToClipboard(filepath: str) -> bool:
+    """
+    将指定文件的引用复制到系统剪贴板。
+    :param filepath: 合法的文件绝对路径
+    :return: 成功返回 True，失败（如文件不存在）返回 False
+    """
+    # 检查文件是否存在且为普通文件
+    if not os.path.isfile(filepath):
+        print(f"错误：文件不存在或不是普通文件：{filepath}")
+        return False
+
+    # 获取 QApplication 实例
+    app = QApplication.instance()
+    if app is None:
+        # 如果没有运行中的QApplication 则创建一个
+        import sys
+
+        app = QApplication(sys.argv)
+    # 创建剪贴板数据对象
+    mime_data = QMimeData()
+    # 将本地路径转换为QUrl
+    url = QUrl.fromLocalFile(os.path.abspath(filepath))
+    mime_data.setUrls([url])
+    # 设置到剪贴板
+    clipboard = app.clipboard()
+    clipboard.setMimeData(mime_data)
+    return True
+
+
+def openFileDir(filepath: str) -> bool:
+    """
+    打开指定文件所在的文件夹，并选中该文件。
+    跨平台支持 Windows、macOS、Linux。
+    :param filepath: 文件的绝对路径
+    :return: 成功返回 True，失败返回 False
+    """
+    if not os.path.exists(filepath):
+        print(f"路径不存在: {filepath}")
+        return False
+    # 获取文件夹路径
+    dirPath = os.path.dirname(filepath)
+    # 转换为 QUrl 使用fromLocalFile处理本地路径
+    url = QUrl.fromLocalFile(dirPath)
+    # 调用系统默认程序打开
+    if not QDesktopServices.openUrl(url):
+        print(f"无法打开文件夹: {dirPath}")
+        return False
+    return True
+
+
+def openImgWithDefaultViewer(filepath: str) -> bool:
+    """
+    使用系统默认程序打开指定的图片文件。
+    跨平台支持 Windows、macOS、Linux。
+    :param filepath: 图片文件的绝对路径
+    :return: 成功返回 True，失败返回 False
+    """
+    if not os.path.isfile(filepath):
+        print(f"文件不存在或不是普通文件: {filepath}")
+        return False
+
+    url = QUrl.fromLocalFile(filepath)
+    if not QDesktopServices.openUrl(url):
+        print(f"无法打开文件: {filepath}")
+        return False
+
+    return True
 
 
 def on_search_clicked(
@@ -448,11 +518,15 @@ def on_image_clicked(
     functionBtnsArea = QWidget()
     functionBtnsAreaLayout = QHBoxLayout()
     functionBtnsArea.setLayout(functionBtnsAreaLayout)
-    finishBtn = QPushButton("完成")
-    finishBtn.clicked.connect(imgInfoWindow.close)
-    deleteBtn = QPushButton("删除")
+    copyImgBtn = QPushButton("复制图像")
+    openImgDirBtn = QPushButton("打开所在目录")
+    openImgDirBtn.clicked.connect(lambda: openFileDir(filePath))
+    openImgBtn = QPushButton("打开图像")
+    openImgDirBtn.clicked.connect(lambda: openImgWithDefaultViewer(filePath))
+    copyImgBtn.clicked.connect(lambda: copyToClipboard(filePath))
+    deleteBtn = QPushButton("删除图像")
 
-    def on_deleteBtn_clicked():
+    def on_deleteBtn_clicked(container: ImageViewer):
         try:
             conn = sqlite3.connect(DB_PATH)
             cursor = conn.cursor()
@@ -463,6 +537,8 @@ def on_image_clicked(
             filePath = os.path.join(TARGET_DIR, oldProperties[1])
             os.remove(filePath)
             conn.commit()
+            # 刷新container
+
             imgInfoWindow.close()
         except Exception as e:
             print(f"删除文件时异常:\n{e}")
@@ -470,8 +546,13 @@ def on_image_clicked(
             conn.close()
 
     deleteBtn.clicked.connect(on_deleteBtn_clicked)
-    functionBtnsAreaLayout.addWidget(finishBtn)
+    finishBtn = QPushButton("完成")
+    finishBtn.clicked.connect(imgInfoWindow.close)
+    functionBtnsAreaLayout.addWidget(copyImgBtn)
+    functionBtnsAreaLayout.addWidget(openImgBtn)
+    functionBtnsAreaLayout.addWidget(openImgDirBtn)
     functionBtnsAreaLayout.addWidget(deleteBtn)
+    functionBtnsAreaLayout.addWidget(finishBtn)
     # 加入组件到布局
     imgInfoWindowRightLayout.addWidget(nicknameArea)
     imgInfoWindowRightLayout.addWidget(tagsArea)
