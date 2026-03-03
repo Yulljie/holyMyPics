@@ -15,7 +15,7 @@
 
 1. 克隆仓库：
    ```bash
-   git clone https://github.com/yourname/holymypics.git
+   git clone https://github.com/Z9CR/holymypics.git
    cd holymypics
    ```
 2. 运行程序：
