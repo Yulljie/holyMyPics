@@ -1,6 +1,6 @@
 # holyMyPics 全人类最神秘的图像聚集地
 
-此项目由Qt图形化图片管理器, 和我多年收集得来的神秘图片组成
+此项目由Qt图形化图片管理器, 和原作者 Z9CR 多年收集得来的神秘图片组成
 你可以轻易地通过程序检索, 复制, 添加, 删除图片
 
 ## 技术栈
@@ -41,6 +41,7 @@ holymypics/
 ├── utils/
 │   ├── database.py      # 数据库初始化及查询接口
 │   ├── fileworks.py     # 文件操作（哈希、复制、删除）
+│   ├── signals.py       # 处理信号（SIGINT 等）
 │   ├── slots.py         # 所有槽函数（业务逻辑）
 │   └── widgets.py       # 自定义控件（ImageLabel, ImageViewer）
 ├── pics/                # 存储文件的目录（自动创建）
