@@ -1,7 +1,10 @@
+#!/usr/bin/env python3
 import utils.database as db
 import sys
 import utils.slots as slots
 import sqlite3
+
+from utils.signals import reg_sig
 from utils.widgets import ImageViewer
 from PySide6.QtWidgets import (
     QApplication,
@@ -20,6 +23,8 @@ from PySide6.QtCore import Qt
 
 DB_PATH = "pics.db"
 TARGET_DIR = "pics"
+# 处理 SIG
+reg_sig()
 # 图像显示
 app = QApplication(sys.argv)
 mainwindow = QMainWindow()
