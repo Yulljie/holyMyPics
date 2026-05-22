@@ -265,6 +265,7 @@ def on_show_tags_clicked(
     # DONE: 添加傻逼槽函数
     # FUCKIT, from Feb to March, damn shit GUI!!!!
     # I hate Qt, not [kju:t] any more
+    # Hey?
     def _copy_selected_btn_on_clicked():
         print("copy_selected_btn被点击")
         formatedTagStr = ""
@@ -375,7 +376,7 @@ def on_image_clicked(
     nicknameAreaLayout = QHBoxLayout()
     nicknameArea.setLayout(nicknameAreaLayout)
 
-    nicknameHinter = QLabel("更改名称")
+    nicknameHinter = QLabel("名称")
     nicknameModifier = QLineEdit()
     try:
         conn_nick = sqlite3.connect(DB_PATH)
@@ -424,7 +425,7 @@ def on_image_clicked(
     tagsAreaLayout = QHBoxLayout()
     tagsArea.setLayout(tagsAreaLayout)
     # :右: tagsArea组件
-    tagsHinter = QLabel("更改标签")
+    tagsHinter = QLabel("标签")
     tagsModifier = QLineEdit()
     tagsModifier.setPlaceholderText("输入新的标签, 以','分割")
     try:
@@ -495,7 +496,7 @@ def on_image_clicked(
         print(f"获取路径失败:\n{e}")
     finally:
         conn.close()
-    pathToFileHinter = QLabel("文件路径")
+    pathToFileHinter = QLabel("路径")
     pathLabel = QLabel(filePath)
     copyPathBtn = QPushButton("复制")
     copyPathBtn.clicked.connect(lambda: pyperclip.copy(filePath))
@@ -507,7 +508,7 @@ def on_image_clicked(
     hashArea = QWidget()
     hashAreaLayout = QHBoxLayout()
     hashArea.setLayout(hashAreaLayout)
-    hashCode = QLabel("哈希代码 " + file_hash)
+    hashCode = QLabel("哈希 " + file_hash)
     copyHashBtn = QPushButton("复制")
     copyHashBtn.clicked.connect(lambda: pyperclip.copy(file_hash))
     hashAreaLayout.addWidget(hashCode)
@@ -528,63 +529,74 @@ def on_image_clicked(
 
     fileSize = os.path.getsize(pathOfFile)  # unit: bytes
     fileSize = convertSize(fileSize)  # 现在是一个字符串 自带单位
-    sizeLabel = QLabel("文件大小 " + fileSize)
+    sizeLabel = QLabel("大小 " + fileSize)
     sizeAreaLayout.addWidget(sizeLabel)
     # :functionBtns:
     functionBtnsArea = QWidget()
     functionBtnsAreaLayout = QHBoxLayout()
     functionBtnsArea.setLayout(functionBtnsAreaLayout)
     copyImgBtn = QPushButton("复制图像")
-    openImgDirBtn = QPushButton("打开所在目录")
+    openImgDirBtn = QPushButton("打开目录")
     openImgDirBtn.clicked.connect(lambda: openFileDir(filePath))
     openImgBtn = QPushButton("打开图像")
     openImgBtn.clicked.connect(lambda: openImgWithDefaultViewer(filePath))
     copyImgBtn.clicked.connect(lambda: copyToClipboard(filePath))
     deleteBtn = QPushButton("删除图像")
 
+
     def on_deleteBtn_clicked():
-        """
-        删除文件并刷新预览
-        """
-        try:
-            conn = sqlite3.connect(DB_PATH)
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM files WHERE hash = ?", (file_hash,))
-            oldProperties = cursor.fetchone()
-            if not oldProperties:
-                print("文件不存在，可能已被删除")
-                return
-            # 删除数据库记录
-            cursor.execute("DELETE FROM files WHERE hash = ?", (file_hash,))
-            # 删除物理文件
-            filePathToDelete = os.path.join(TARGET_DIR, oldProperties[1])
-            os.remove(filePathToDelete)
-            conn.commit()
-            # 刷新预览区：重新执行当前搜索条件
-            # 从主窗口获取需要的部件
-            tag_list = mainwindow.tag_list_widget
-            nickname_input = mainwindow.nickname_input
-            result_label = mainwindow.result_label
-            container = mainwindow.container
-            # 重新搜索并更新 container
-            hashs = on_search_clicked(tag_list, nickname_input, result_label)
-            container.clear_images()
-            conn2 = sqlite3.connect(DB_PATH)
-            cursor2 = conn2.cursor()
-            for hashKey in hashs:
-                cursor2.execute("SELECT * FROM files WHERE hash = ?", (hashKey,))
-                searchResult = cursor2.fetchone()
-                if searchResult:
-                    container.add_image(
-                        searchResult[0], searchResult[1], searchResult[2]
-                    )
-            conn2.close()
-            # 关闭详情窗口
-            imgInfoWindow.close()
-        except Exception as e:
-            print(f"删除文件时异常:\n{e}")
-        finally:
-            conn.close()
+        dialog = QMessageBox()
+        dialog.setWindowTitle("删除图像")
+        dialog.resize(300, 150)
+        dialog.setText("确实要删除此图像吗？")
+        dialog.setStandardButtons(QMessageBox.StandardButton.No | QMessageBox.StandardButton.Yes)
+        dialog.button(QMessageBox.StandardButton.No).setText("取消")
+        dialog.button(QMessageBox.StandardButton.Yes).setText("确定")
+        dialog.setDefaultButton(QMessageBox.StandardButton.No)
+        op = dialog.exec()
+        if op == QMessageBox.StandardButton.Yes:
+
+            # 删除文件并刷新预览
+            try:
+                conn = sqlite3.connect(DB_PATH)
+                cursor = conn.cursor()
+                cursor.execute("SELECT * FROM files WHERE hash = ?", (file_hash,))
+                oldProperties = cursor.fetchone()
+                if not oldProperties:
+                    print("文件不存在，可能已被删除")
+                    return
+                # 删除数据库记录
+                cursor.execute("DELETE FROM files WHERE hash = ?", (file_hash,))
+                # 删除物理文件
+                filePathToDelete = os.path.join(TARGET_DIR, oldProperties[1])
+                os.remove(filePathToDelete)
+                conn.commit()
+                # 刷新预览区：重新执行当前搜索条件
+                # 从主窗口获取需要的部件
+                tag_list = mainwindow.tag_list_widget
+                nickname_input = mainwindow.nickname_input
+                result_label = mainwindow.result_label
+                container = mainwindow.container
+                # 重新搜索并更新 container
+                hashs = on_search_clicked(tag_list, nickname_input, result_label)
+                container.clear_images()
+                conn2 = sqlite3.connect(DB_PATH)
+                cursor2 = conn2.cursor()
+                for hashKey in hashs:
+                    cursor2.execute("SELECT * FROM files WHERE hash = ?", (hashKey,))
+                    searchResult = cursor2.fetchone()
+                    if searchResult:
+                        container.add_image(
+                            searchResult[0], searchResult[1], searchResult[2]
+                        )
+                conn2.close()
+                # 关闭详情窗口
+                imgInfoWindow.close()
+            except Exception as e:
+                print(f"删除文件时异常:\n{e}")
+            finally:
+                conn.close()
+
 
     deleteBtn.clicked.connect(on_deleteBtn_clicked)
     finishBtn = QPushButton("完成")
