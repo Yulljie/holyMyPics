@@ -41,6 +41,7 @@ holymypics/
 ├── utils/
 │   ├── database.py      # 数据库初始化及查询接口
 │   ├── fileworks.py     # 文件操作（哈希、复制、删除）
+│   ├── signals.py       # 处理信号（SIGINT 等）
 │   ├── slots.py         # 所有槽函数（业务逻辑）
 │   └── widgets.py       # 自定义控件（ImageLabel, ImageViewer）
 ├── pics/                # 存储文件的目录（自动创建）
